@@ -21,6 +21,7 @@ void muat_data();
 void simpan_data();
 void tambah_buku();
 void tampil_buku();
+void edit_buku();
 
 int main() {
     muat_data();
@@ -82,6 +83,7 @@ void tampilan() {
         printf("1. Tambah Data Buku\n");
         printf("2. Tampilkan Semua Data Buku\n");
         printf("3. Keluar dan Simpan\n");
+        printf("4. Edit Data Buku\n");
         printf("Pilihan: ");
         
         if (scanf("%d", &pilihan) != 1) {
@@ -103,6 +105,9 @@ void tampilan() {
                 break;
             case 3:
                 printf("Terima kasih.\n");
+                break;
+            case 4:
+                edit_buku();
                 break;
             default:
                 printf("Pilihan tidak valid.\n");
@@ -167,4 +172,60 @@ void tampil_buku() {
                status_text);
     }
     printf("--------------------------------------------------------------------------------------------------------------------------------\n");
+}
+
+// Function untuk mengedit data mahasiswa berdasarkan nomor urut
+void edit_buku() {
+    if (jumlahBuku == 0) {
+        printf("Belum ada data buku untuk diedit.\n");
+        return;
+    }
+
+    tampil_buku();
+    char cariKodeBuku[10];
+    printf("Masukkan kode buku yang ingin diedit: ");
+    fgets(cariKodeBuku, sizeof(cariKodeBuku), stdin);
+    cariKodeBuku[strcspn(cariKodeBuku, "\n")] = '\0';
+
+    int index = -1;
+
+    // Mencari buku berdasarkan kodenya
+    for (int i = 0; i < jumlahBuku; i++) {
+        if (strcmp(daftarBuku[i].kode_buku, cariKodeBuku) == 0) {
+            index = i;
+            break;
+        }
+    }
+
+    if (index == -1) {
+        printf("Buku dengan kode %s tidak ditemukan\n", cariKodeBuku);
+        return;
+    }
+
+    // Jika buku ditemukan
+    printf("Masukkan Kode Buku Baru (diawali 'KB'): ");
+    fgets(daftarBuku[index].kode_buku, sizeof(daftarBuku[index].kode_buku), stdin);
+    daftarBuku[index].kode_buku[strcspn(daftarBuku[index].kode_buku, "\n")] = 0;
+
+    printf("Masukkan Judul Baru: ");
+    fgets(daftarBuku[index].judul, sizeof(daftarBuku[index].judul), stdin);
+    daftarBuku[index].judul[strcspn(daftarBuku[index].judul, "\n")] = 0;
+
+    printf("Masukkan Nama Penulis Baru: ");
+    fgets(daftarBuku[index].penulis, sizeof(daftarBuku[index].penulis), stdin);
+    daftarBuku[index].penulis[strcspn(daftarBuku[index].penulis, "\n")] = 0;
+
+    printf("Masukkan Tahun Terbit Baru: ");
+    if (scanf("%d", &daftarBuku[index].tahun_terbit) != 1) {
+        printf("\nInput tahun tidak valid.\n");
+        while (getchar() != '\n');
+        return;
+    }
+    while (getchar() != '\n');
+
+    printf("Masukkan Status Baru (0 = Dipinjam, 1 = Tersedia): ");
+    scanf("%d", &daftarBuku[index].status);
+
+    printf("\nBuku berhasil diedit.\n");
+
 }
