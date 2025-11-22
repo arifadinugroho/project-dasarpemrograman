@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #define NAMA_FILE "perpustakaan.txt"
 #define NAMA_FILE2 "peminjam.txt"
@@ -8,6 +9,8 @@
 typedef struct {
     char judul[100];
     char penulis[50];
+    char genre[50]; 
+    char tanggal_pinjam[11];  // DD/MM/YYYY untuk menghitung denda
     int tahun_terbit;
     int status; // 1 = Tersedia, 0 = Dipinjam
 } Buku;
@@ -15,6 +18,25 @@ typedef struct {
 #define MAX_BUKU 100
 Buku daftarBuku[MAX_BUKU];
 int jumlahBuku = 0;
+
+// Menghitung jumlah hari 
+int tanggal_ke_hari(char *tanggal) {
+    int d, m, y;
+    sscanf(tanggal, "%d/%d/%d", &d, &m, &y);
+    int hari = d;
+    int bulan_hari[] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    for (int i = 1; i < m; i++) {
+        hari += bulan_hari[i];
+        if (i == 2 && y % 4 == 0) hari++;  
+    }
+    hari += (y - 1900) * 365 + (y - 1900) / 4;  
+    return hari;
+}
+
+// Menghitung selisih hari antara dua tanggal (DD/MM/YYYY)
+int hitung_selisih_hari(char *tanggal1, char *tanggal2) {
+    return tanggal_ke_hari(tanggal2) - tanggal_ke_hari(tanggal1);
+}
 
 typedef struct {
     char nama[50];
@@ -39,8 +61,7 @@ void tampil_buku();
 void edit_buku();
 void tampil_peminjam();
 void tambah_peminjam();
-void sorting_data();
-void searching_data();
+void kembalikan_buku();
 
 int main() {
     muat_data_buku();
@@ -149,9 +170,8 @@ void tampilan() {
         printf("3. Edit Data Buku\n");
         printf("4. Tambah Data Peminjam\n");
         printf("5. Tampilkan Data Peminjam\n");
-        printf("6. Sorting Data Buku atau Data Peminjam\n");
-        printf("7. Searching Data Buku atau Data Peminjam\n");
-        printf("8. Keluar dan Simpan\n");
+        printf("6. MEngembalikan Buku\n");
+        printf("7. Keluar dan Simpan\n");
         printf("Pilihan: ");
 
         if (scanf("%d", &pilihan) != 1) {
@@ -184,18 +204,16 @@ void tampilan() {
                 tampil_peminjam();
                 break;
             case 6:
-                sorting_data();
+                kembalikan_buku();
+                simpan_data_buku();
                 break;
             case 7:
-                searching_data();
-                break;
-            case 8:
                 printf("Terima kasih.\n");
                 break;
             default:
                 printf("Pilihan tidak valid.\n");
         }
-    } while (pilihan != 8);
+    } while (pilihan != 7);
 }
 
 // Function untuk menambah data buku baru
@@ -215,6 +233,10 @@ void tambah_buku() {
     fgets(daftarBuku[jumlahBuku].penulis, sizeof(daftarBuku[jumlahBuku].penulis), stdin);
     daftarBuku[jumlahBuku].penulis[strcspn(daftarBuku[jumlahBuku].penulis, "\n")] = 0;
 
+    printf("Genre: ");
+    fgets(daftarBuku[jumlahBuku].genre, sizeof(daftarBuku[jumlahBuku].genre), stdin);
+    daftarBuku[jumlahBuku].genre[strcspn(daftarBuku[jumlahBuku].genre, "\n")] = 0;
+
     printf("Tahun Terbit: ");
     if (scanf("%d", &daftarBuku[jumlahBuku].tahun_terbit) != 1) {
         printf("\nInput tahun tidak valid.\n");
@@ -224,7 +246,8 @@ void tambah_buku() {
     while (getchar() != '\n');
 
     daftarBuku[jumlahBuku].status = 1;
-
+    strcpy(daftarBuku[jumlahBuku].tanggal_pinjam, "00/00/0000");  
+    
     jumlahBuku++;
     printf("\nBuku berhasil ditambahkan. Status default: Tersedia.\n");
 }
@@ -239,7 +262,7 @@ void tampil_buku() {
     printf("\n--- DAFTAR SEMUA BUKU ---\n");
     printf("-------------------------------------------------------------------------------------------------\n");
     printf("| %-40s | %-20s | %-12s | %-10s |\n",
-           "Judul", "Penulis", "Tahun Terbit", "Status");
+           "Judul", "Penulis", "Tahun Terbit", "Genre", "Status");
     printf("-------------------------------------------------------------------------------------------------\n");
 
     for (int i = 0; i < jumlahBuku; i++) {
@@ -248,6 +271,7 @@ void tampil_buku() {
                daftarBuku[i].judul,
                daftarBuku[i].penulis,
                daftarBuku[i].tahun_terbit,
+               daftarBuku[i].genre,
                status_text);
     }
     printf("-------------------------------------------------------------------------------------------------\n");
@@ -290,6 +314,10 @@ void edit_buku() {
     fgets(daftarBuku[index].penulis, sizeof(daftarBuku[index].penulis), stdin);
     daftarBuku[index].penulis[strcspn(daftarBuku[index].penulis, "\n")] = 0;
 
+    printf("Masukkan Genre Baru: ");
+    fgets(daftarBuku[index].genre, sizeof(daftarBuku[index].genre), stdin);
+    daftarBuku[index].genre[strcspn(daftarBuku[index].genre, "\n")] = 0;
+
     printf("Masukkan Tahun Terbit Baru: ");
     if (scanf("%d", &daftarBuku[index].tahun_terbit) != 1) {
         printf("\nInput tahun tidak valid.\n");
@@ -308,6 +336,58 @@ void edit_buku() {
 
     printf("\nBuku berhasil diedit.\n");
 
+}
+
+// Function untuk mengembalikan buku dan menghitung denda
+void kembalikan_buku() {
+    if (jumlahBuku == 0) {
+        printf("Belum ada data buku.\n");
+        return;
+    }
+
+    char cariJudul[100];
+    printf("Masukkan judul buku yang ingin dikembalikan: ");
+    fgets(cariJudul, sizeof(cariJudul), stdin);
+    cariJudul[strcspn(cariJudul, "\n")] = '\0';
+
+    int index = -1;
+
+    // Mencari buku berdasarkan judulnya
+    for (int i = 0; i < jumlahBuku; i++) {
+        if (strcmp(daftarBuku[i].judul, cariJudul) == 0) {
+            index = i;
+            break;
+        }
+    }
+
+    if (index == -1) {
+        printf("Buku dengan judul %s tidak ditemukan\n", cariJudul);
+        return;
+    }
+
+    if (daftarBuku[index].status == 1) {
+        printf("Buku sudah tersedia (sudah dikembalikan).\n");
+        return;
+    }
+
+    char tanggal_kembali[11];
+    printf("Masukkan tanggal pengembalian (DD/MM/YYYY): ");
+    fgets(tanggal_kembali, sizeof(tanggal_kembali), stdin);
+    tanggal_kembali[strcspn(tanggal_kembali, "\n")] = '\0';
+
+    // Asumsi batas pengembalian 7 hari setelah pinjam
+    int selisih = hitung_selisih_hari(daftarBuku[index].tanggal_pinjam, tanggal_kembali);
+    int hari_telat = selisih - 7; 
+    if (hari_telat > 0) {
+        int denda = hari_telat * 5000;
+        printf("Buku telat dikembalikan %d hari. Denda: Rp %d\n", hari_telat, denda);
+    } else {
+        printf("Buku dikembalikan tepat waktu. Tidak ada denda.\n");
+    }
+
+    daftarBuku[index].status = 1;  
+    strcpy(daftarBuku[index].tanggal_pinjam, "00/00/0000");  
+    printf("Buku berhasil dikembalikan.\n");
 }
 
 // Function untuk menambah data peminjam baru
