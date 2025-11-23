@@ -62,6 +62,8 @@ void edit_buku();
 void tampil_peminjam();
 void tambah_peminjam();
 void kembalikan_buku();
+void sorting_data();
+void searching_data();
 
 int main() {
     muat_data_buku();
@@ -103,10 +105,11 @@ void simpan_data_buku() {
     }
 
     for (int i = 0; i < jumlahBuku; i++) {
-        fprintf(file, "%s|%s|%d|%d\n",
+        fprintf(file, "%s|%s|%d|%s|%d\n",
                 daftarBuku[i].judul,
                 daftarBuku[i].penulis,
                 daftarBuku[i].tahun_terbit,
+                daftarBuku[i].genre,
                 daftarBuku[i].status);
     }
 
@@ -170,8 +173,10 @@ void tampilan() {
         printf("3. Edit Data Buku\n");
         printf("4. Tambah Data Peminjam\n");
         printf("5. Tampilkan Data Peminjam\n");
-        printf("6. MEngembalikan Buku\n");
-        printf("7. Keluar dan Simpan\n");
+        printf("6. Mengembalikan Buku\n");
+        printf("7. Sorting Data Buku atau Data Peminjam\n");
+        printf("8. Searching Data Buku atau Data Peminjam\n");
+        printf("9. Keluar dan Simpan\n");
         printf("Pilihan: ");
 
         if (scanf("%d", &pilihan) != 1) {
@@ -208,12 +213,18 @@ void tampilan() {
                 simpan_data_buku();
                 break;
             case 7:
+                sorting_data();
+                break;
+            case 8:
+                searching_data();
+                break;
+            case 9:
                 printf("Terima kasih.\n");
                 break;
             default:
                 printf("Pilihan tidak valid.\n");
         }
-    } while (pilihan != 7);
+    } while (pilihan != 9);
 }
 
 // Function untuk menambah data buku baru
@@ -260,21 +271,21 @@ void tampil_buku() {
     }
 
     printf("\n--- DAFTAR SEMUA BUKU ---\n");
-    printf("-------------------------------------------------------------------------------------------------\n");
-    printf("| %-40s | %-20s | %-12s | %-10s |\n",
+    printf("-----------------------------------------------------------------------------------------------------------\n");
+    printf("| %-40s | %-20s | %-12s | %-10s | %-10s |\n",
            "Judul", "Penulis", "Tahun Terbit", "Genre", "Status");
-    printf("-------------------------------------------------------------------------------------------------\n");
+    printf("-----------------------------------------------------------------------------------------------------------\n");
 
     for (int i = 0; i < jumlahBuku; i++) {
         char *status_text = (daftarBuku[i].status == 1) ? "Tersedia" : "Dipinjam";
-        printf("| %-40s | %-20s | %-12d | %-10s |\n",
+        printf("| %-40s | %-20s | %-12d | %-10s | %-10s |\n",
                daftarBuku[i].judul,
                daftarBuku[i].penulis,
                daftarBuku[i].tahun_terbit,
                daftarBuku[i].genre,
                status_text);
     }
-    printf("-------------------------------------------------------------------------------------------------\n");
+    printf("-----------------------------------------------------------------------------------------------------------\n");
 }
 
 // Function untuk mengedit data buku berdasarkan kode buku
